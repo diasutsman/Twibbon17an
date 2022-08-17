@@ -6,10 +6,8 @@ import android.content.ContentValues
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
-import android.media.Image
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
@@ -19,11 +17,6 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.rpla17an.twibbon17an.databinding.ActivityMainBinding
-import java.io.ByteArrayOutputStream
-import java.io.FileOutputStream
-import java.io.IOException
-import java.io.OutputStream
-import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
@@ -116,21 +109,6 @@ class MainActivity : AppCompatActivity() {
 
         // Set up image capture listener, which is triggered after photo has
         // been taken
-        imageCapture.takePicture(ContextCompat.getMainExecutor(this),
-            object : ImageCapture.OnImageCapturedCallback() {
-                @SuppressLint("UnsafeOptInUsageError")
-                override fun onCaptureSuccess(image: ImageProxy) {
-//                val planeProxy = image.planes[0]
-//                val buffer: ByteBuffer = planeProxy.buffer
-//                val bytes = ByteArray(buffer.remaining())
-//                buffer.get(bytes)
-                    combineTwoImage((binding.imagePreview.drawable as BitmapDrawable).bitmap,
-                        imageProxyToBitmap(image).copy(Bitmap.Config.ARGB_8888,true))
-                    super.onCaptureSuccess(image)
-                }
-
-            })
-
         imageCapture.takePicture(
             outputOptions,
             ContextCompat.getMainExecutor(this),
@@ -139,8 +117,7 @@ class MainActivity : AppCompatActivity() {
                     Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
                 }
 
-                override fun
-                        onImageSaved(output: ImageCapture.OutputFileResults) {
+                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     val msg = "Photo capture succeeded: ${output.savedUri}"
                     Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
                     Log.d(TAG, msg)
@@ -171,52 +148,9 @@ class MainActivity : AppCompatActivity() {
             baseContext, it) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun combineTwoImage(topImage: Bitmap, bottomImage: Bitmap) {
-        val combinedBitmap = Canvas(bottomImage)
-        combinedBitmap.drawBitmap(topImage, 0f, 0f, null)
-
-        var os: OutputStream? = null
-        val name = SimpleDateFormat(FILENAME_FORMAT, Locale.US)
-            .format(System.currentTimeMillis())
-        try {
-            os = FileOutputStream(Environment.getExternalStorageDirectory().path + name);
-            bottomImage.compress(Bitmap.CompressFormat.PNG, 50, os)
-        } catch (e: IOException) {
-            e.printStackTrace();
-        }
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
-    }
-
-    fun Image.toBitmap(): Bitmap {
-        Log.d(TAG, "toBitmap: ${planes.size}")
-        val yBuffer = planes[0].buffer // Y
-        val vuBuffer = planes[2].buffer // VU
-
-        val ySize = yBuffer.remaining()
-        val vuSize = vuBuffer.remaining()
-
-        val nv21 = ByteArray(ySize + vuSize)
-
-        yBuffer.get(nv21, 0, ySize)
-        vuBuffer.get(nv21, ySize, vuSize)
-
-        val yuvImage = YuvImage(nv21, ImageFormat.NV21, this.width, this.height, null)
-        val out = ByteArrayOutputStream()
-        yuvImage.compressToJpeg(Rect(0, 0, yuvImage.width, yuvImage.height), 50, out)
-        val imageBytes = out.toByteArray()
-        return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-    }
-
-    private fun imageProxyToBitmap(image: ImageProxy): Bitmap {
-        val planeProxy = image.planes[0]
-        val buffer: ByteBuffer = planeProxy.buffer
-        val bytes = ByteArray(buffer.remaining())
-        buffer.get(bytes)
-        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
     }
 
     companion object {
