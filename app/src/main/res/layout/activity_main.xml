@@ -3,8 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:background="@color/black"
     android:layout_height="match_parent"
+    android:background="@color/black"
     tools:context=".MainActivity">
 
     <androidx.camera.view.PreviewView
@@ -21,15 +21,20 @@
         android:id="@+id/image_preview"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
         app:layout_constraintBottom_toBottomOf="@id/viewFinder"
-        app:layout_constraintTop_toTopOf="@id/viewFinder"/>
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintTop_toTopOf="@id/viewFinder"
+        tools:src="@drawable/image1" />
 
     <ImageButton
         android:id="@+id/photo_btn"
         android:layout_width="87dp"
         android:layout_height="87dp"
-        android:background="@drawable/selector_photo"
         android:layout_marginBottom="10dp"
+        android:background="@drawable/selector_photo"
+        android:importantForAccessibility="no"
         app:layout_constraintBottom_toTopOf="@id/cv_twibbon"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
@@ -51,7 +56,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Twibbon Coi"
+                android:text="@string/txt_twibbon_coi"
                 android:textAlignment="center"
                 android:textColor="@color/black"
                 android:textSize="14.6sp"
