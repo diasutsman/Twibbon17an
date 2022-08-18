@@ -5,4 +5,5 @@
     android:layout_margin="4dp"
     android:adjustViewBounds="true"
     android:layout_height="wrap_content"
-    tools:src="@drawable/image1" />
+    tools:src="@drawable/image1"
+    android:importantForAccessibility="no"/>
