@@ -34,7 +34,7 @@ class TwibbonAdapter(private val onClick: (Int) -> Unit) :
         )
 
     override fun onBindViewHolder(holder: TwibbonViewHolder, position: Int) {
-        holder.binding.root.setImageResource(listTwibbon[position])
+        holder.binding.ivTwibbon.setImageResource(listTwibbon[position])
     }
 
     override fun getItemCount() = listTwibbon.size
