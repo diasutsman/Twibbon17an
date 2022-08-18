@@ -1,24 +1,24 @@
 package com.rpla17an.twibbon17an
 
 import android.Manifest
-import android.annotation.SuppressLint
-import android.content.ContentValues
+import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore
 import android.util.Log
+import android.util.Rational
+import android.view.Surface
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.android.material.snackbar.Snackbar
 import com.rpla17an.twibbon17an.databinding.ActivityMainBinding
-import java.text.SimpleDateFormat
-import java.util.*
+import com.rpla17an.twibbon17an.utils.HelperFunctions.combineTwoImage
+import com.rpla17an.twibbon17an.utils.HelperFunctions.imageProxyToBitmap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -74,10 +74,16 @@ class MainActivity : AppCompatActivity() {
             val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
             imageCapture = ImageCapture.Builder().build()
 
+            val useCaseGroup = UseCaseGroup.Builder()
+                .addUseCase(preview)
+                .addUseCase(imageCapture as ImageCapture)
+                .setViewPort(ViewPort.Builder(Rational(binding.imagePreview.width,
+                    binding.imagePreview.height), Surface.ROTATION_0).build())
+                .build()
             try {
                 cameraProvider.unbindAll()
 
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
+                cameraProvider.bindToLifecycle(this, cameraSelector, useCaseGroup)
             } catch (exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
             }
@@ -89,41 +95,24 @@ class MainActivity : AppCompatActivity() {
         // Get a stable reference of the modifiable image capture use case
         val imageCapture = imageCapture ?: return
 
-        // Create time stamped name and MediaStore entry.
-        val name = SimpleDateFormat(FILENAME_FORMAT, Locale.US)
-            .format(System.currentTimeMillis())
-        val contentValues = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, name)
-            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/Twibbon17an-Image")
-            }
-        }
-
-        // Create output options object which contains file + metadata
-        val outputOptions = ImageCapture.OutputFileOptions
-            .Builder(contentResolver,
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                contentValues)
-            .build()
-
-        // Set up image capture listener, which is triggered after photo has
-        // been taken
-        imageCapture.takePicture(
-            outputOptions,
-            ContextCompat.getMainExecutor(this),
-            object : ImageCapture.OnImageSavedCallback {
-                override fun onError(exc: ImageCaptureException) {
-                    Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
+        // edit image and save it
+        imageCapture.takePicture(ContextCompat.getMainExecutor(this),
+            object : ImageCapture.OnImageCapturedCallback() {
+                override fun onCaptureSuccess(image: ImageProxy) {
+                    binding.imagePreview.drawable?.let {
+                        val uri = combineTwoImage(applicationContext,
+                            (it as BitmapDrawable).bitmap,
+                            imageProxyToBitmap(image))
+                        val msg = "Photo capture succeeded: $uri"
+                        Snackbar.make(binding.root, msg, Snackbar.LENGTH_SHORT)
+                            .setAction("Show File") {
+                                val intent = Intent(Intent.ACTION_VIEW, uri)
+                                startActivity(intent)
+                            }.show()
+                    }
+                    image.close()
                 }
-
-                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    val msg = "Photo capture succeeded: ${output.savedUri}"
-                    Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
-                    Log.d(TAG, msg)
-                }
-            }
-        )
+            })
     }
 
     override fun onRequestPermissionsResult(
@@ -155,7 +144,6 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "CameraXApp"
-        private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
         private const val REQUEST_CODE_PERMISSIONS = 10
         private val REQUIRED_PERMISSIONS =
             mutableListOf(
