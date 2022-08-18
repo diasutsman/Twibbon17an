@@ -15,6 +15,7 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import com.google.android.material.snackbar.Snackbar
 import com.rpla17an.twibbon17an.databinding.ActivityMainBinding
 import com.rpla17an.twibbon17an.utils.HelperFunctions.combineTwoImage
@@ -92,6 +93,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun takePhoto() {
+
+        // disable the button to prevent multiple clicks
+        binding.apply{
+            photoBtn.apply{
+                isVisible = false
+                isEnabled = false
+            }
+            progressBar.isVisible = true
+        }
+
         // Get a stable reference of the modifiable image capture use case
         val imageCapture = imageCapture ?: return
 
@@ -99,16 +110,24 @@ class MainActivity : AppCompatActivity() {
         imageCapture.takePicture(ContextCompat.getMainExecutor(this),
             object : ImageCapture.OnImageCapturedCallback() {
                 override fun onCaptureSuccess(image: ImageProxy) {
-                    binding.imagePreview.drawable?.let {
-                        val uri = combineTwoImage(applicationContext,
-                            (it as BitmapDrawable).bitmap,
-                            imageProxyToBitmap(image))
-                        val msg = "Photo capture succeeded: $uri"
-                        Snackbar.make(binding.root, msg, Snackbar.LENGTH_SHORT)
-                            .setAction("Show File") {
-                                val intent = Intent(Intent.ACTION_VIEW, uri)
-                                startActivity(intent)
-                            }.show()
+                    binding.apply{
+                        photoBtn.apply{
+                            isVisible = true
+                            isEnabled = true
+                        }
+                        progressBar.isVisible = false
+                        if (imagePreview.drawable == null)Toast.makeText(this@MainActivity, "Please select a twibbon", Toast.LENGTH_SHORT).show()
+                        else {
+                            val uri = combineTwoImage(applicationContext,
+                                (imagePreview.drawable as BitmapDrawable).bitmap,
+                                imageProxyToBitmap(image))
+                            val msg = "Photo capture succeeded: $uri"
+                            Snackbar.make(binding.root, msg, Snackbar.LENGTH_SHORT)
+                                .setAction("Show File") {
+                                    val intent = Intent(Intent.ACTION_VIEW, uri)
+                                    startActivity(intent)
+                                }.show()
+                        }
                     }
                     image.close()
                 }
